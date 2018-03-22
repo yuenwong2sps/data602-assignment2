@@ -1,0 +1,1 @@
+"C:\Program Files\MongoDB\Server\3.6\bin\mongod.exe" --dbpath "C:\DataAnalystic\GitHub\data602\data602-assignment2\data\db"

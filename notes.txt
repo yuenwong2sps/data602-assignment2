@@ -1,0 +1,24 @@
+***Window***
+*install bs4
+pip install beautifulsoup4
+
+*install and run mongodb
+1.  Download mongodb, install, and install mongodb GUI client "compass"
+https://docs.mongodb.com/manual/tutorial/install-mongodb-on-windows/
+
+2. Run
+-create a folder for database file "\data\db"
+-Run in command mode
+"C:\Program Files\MongoDB\Server\3.6\bin\mongod.exe" --dbpath "C:\DataAnalystic\GitHub\data602\data602-assignment2\data\db"
+
+*install mongo python client
+https://realpython.com/introduction-to-mongodb-and-python/
+1. pip install pymongo==3.4.0
+
+
+***VirtualBox***
+*install mongodb
+docker pull mongo
+docker run --name database -d -p 27017:27017 mongo --noauth --bind_ip=0.0.0.0
+docker ps
+
