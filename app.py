@@ -10,7 +10,6 @@
 from flask import Flask, render_template, request, url_for
 import urllib.request as req
 import numpy as np
-import scipy as sp
 import pandas as pd
 import matplotlib as mp
 

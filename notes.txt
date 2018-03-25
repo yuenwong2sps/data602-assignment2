@@ -22,3 +22,56 @@ docker pull mongo
 docker run --name database -d -p 27017:27017 mongo --noauth --bind_ip=0.0.0.0
 docker ps
 
+***EC2***
+maybe put mongodb in requirement
+
+******Upload and Test on VirtualBox*****
+
+git clone https://yuenwong2sps:jonnyGithub2k@github.com/yuenwong2sps/data602-assignment2-docker.git hw2d
+cd hw2d
+sudo docker build --no-cache -t hw2-app .
+sudo docker run -d -p 80:5000 -it my-trader-app
+
+
+**if could not resolve host error happen**
+git config --global --unset https.proxy
+
+
+***
+**delete failed built docker image with force
+docker rmi $(docker images --filter “dangling=true” -q --no-trunc) -f
+
+**clear all exit container
+docker ps -a | grep Exit | cut -d ' ' -f 1 | xargs docker rm
+
+docker stop $(docker ps -a -q)
+docker rm $(docker ps -a -q)
+
+git clone https://yuenwong2sps:jonnyGithub2k@github.com/yuenwong2sps/data602-assignment2 data602-assignment2 
+
+https://github.com/yuenwong2sps/data602-assignment2.git
+
+RUN apt-get -y install libc-dev
+RUN apt-get -y install build-essential
+RUN pip install -U pip
+
+RUN apk --update add --no-cache \ 
+    gcc \
+    freetype-dev
+
+RUN apk add python py-pip python-dev 
+
+# Install dependencies
+RUN apk add --no-cache --virtual .build-deps \
+    gfortran \
+    musl-dev \
+    g++
+
+RUN ln -s /usr/include/locale.h /usr/include/xlocale.h
+
+
+
+RUN apk add python py-pip python-dev 
+
+RUN pip install --upgrade pip
+
