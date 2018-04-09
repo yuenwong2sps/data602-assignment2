@@ -1,8 +1,35 @@
 {% extends "layout.html" %}
 
 {% block content %}
-  <a href="/trade" class="btn btn-warning" role="button">Trade</a>
-  <a href="/testDB" class="btn btn-warning" role="button">Test DB</a>
-  <a href="/blotter" class="btn btn-info" role="button">View Blotter</a>
-  <a href="/pl" class="btn btn-info" role="button">View P/L</a>
+
+
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
+
+
+ 
+  <br>
+  <div id="log"></div>
+    
+    <script type="text/javascript" charset="utf-8">
+    
+
+    
+    var socket = io.connect('http://' + document.domain + ':' + location.port);
+    socket.on('connect', function() {
+        
+        socket.emit('client_connected', {data: 'Connected!'});
+        
+    });
+    
+    socket.on('my_response', function(msg) {
+               $('#log').append('<p>Connected to server: ' + msg.data + '</p>');
+            });
+            
+   
+    
+
+    
+    </script>
+
+
 {% endblock %}

@@ -8,90 +8,162 @@
 
 
 from flask import Flask, render_template, request, url_for
-import urllib.request as req
-import numpy as np
-import pandas as pd
-import matplotlib as mp
 
-import clsTrade
-
-from pymongo import MongoClient
+from flask_socketio import SocketIO, emit, send
+import datetime
 
 
+#import time
+#import json
+#import threading
+#import urllib.request as req
+#import numpy as np
+#import pandas as pd
+#import matplotlib as mp
+#from pymongo import MongoClient
 
+
+#unofficial gdax websocket package, it could be found in folder gdax
+import gdax.websocket_client2
+
+#models code that support the views and controls
+import clsModels
+
+
+#flask and socket init code
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'secret!'
+socketio = SocketIO(app)
+
+update_time = datetime.datetime.now
+
+#web socket client for gdax price
+wsClient = gdax.websocket_client2.MyWebsocketClient() 
+
+#start wsClient and get feed
+def init_feed():
+    print("Start websocket feed")
+    wsClient.start()
+ 
 
 @app.route("/")
 def show_main_page():
+    init_feed()
     with app.test_request_context():
-        print( url_for('show_trade_screen'))
-        print( url_for('show_blotter'))
-        print( url_for('show_pl'))
-        print( url_for('execute_trade'))
-        print( url_for('show_testDB_screen'))
-        print( url_for('execute_testDB'))
-
         
+        
+        
+        #show main page at the beginning
         return render_template('main.html')
 
+
+
+####Trade Controllers ####
 @app.route("/trade")
 def show_trade_screen():
-    return render_template('trade.html')
-
-@app.route("/testDB")
-def show_testDB_screen():
-    return render_template('testDB.html')
-
-@app.route("/blotter")
-def show_blotter():
-    return render_template('blotter.html')
-
-@app.route("/pl")
-def show_pl():
-    return render_template('pl.html')
+    tradeModel = clsModels.TradeModel()
+    
+    CashEntry = tradeModel.CashEntry
+    AggEntries = tradeModel.AggEntries
+    
+    
+          
+    return render_template('trade.html', Entries = AggEntries, CashEntry = CashEntry)
 
 @app.route("/submitTrade",methods=['POST'])
 def execute_trade():
-    obj_trade = clsTrade.Trade()
+   
+    tradeModel = clsModels.TradeModel()
+    
     symbol = request.form['symbol']
     quantity = request.form['quantity']
-    
-    quote = obj_trade.GetQuote(symbol)
-
-    price = quote.Ask * float(quantity)
-    
-    # pull quote
-    # calculate trade value
-    # insert into blotter
-    # calculate impact to p/l and cash
-    return "You traded at " + str(price)
-
-@app.route("/submitEntryToDB",methods=['POST'])
-def execute_testDB():
-    
     side = request.form['side']
-    symbol = request.form['symbol']
-    quantity = request.form['quantity']
-        
     
-    client = MongoClient('localhost', 27017)
-    
-    db = client['pymongo_test']
-    
-    posts = db.posts
-    post_data = {
-        'Action': side,
-        'Symbol': symbol,
-        'Quantity': quantity
-    }
-    result = posts.insert_one(post_data)
-
-    return 'One post: {0}'.format(result.inserted_id)
    
     
-@app.route("/sample")
-def show_sample():
-    return render_template('sample.html')
+    trade_message_to_user = ""
+    
+    if quantity.isdigit():
+    
+        #get price at server session instead of model to ensure it keeps running instead of be killed after each request
+        sym_price = wsClient.GetQuote(symbol)
+        print(symbol + " " + str(quantity) + " " + str(sym_price)) 
+        if side == 'b':
+            trade_message_to_user = tradeModel.TradeBuy(symbol, float(quantity), float(sym_price))
+        else:
+            trade_message_to_user = tradeModel.TradeSell(symbol, float(quantity), float(sym_price ))
+
+    else:
+        #not trade and show warning message
+        trade_message_to_user = "Quantity has to be digit"
+    
+    CashEntry = tradeModel.CashEntry
+    AggEntries = tradeModel.AggEntries
+    
+    
+          
+    return render_template('trade.html', Entries = AggEntries, CashEntry = CashEntry, MessageToUser = trade_message_to_user)
+
+
+    
+
+
+
+#####Blotter Controllers ####
+@app.route("/blotter")
+def show_blotter():
+    blotterModel = clsModels.BlotterModel()
+    blotterEntries = blotterModel.Entries
+    
+    return render_template('blotter.html', Entries = blotterEntries)
+
+
+
+#####P/L Controllers ####
+@app.route("/pl")
+def show_pl():
+    
+    #generate px list with websocket for PL calculation
+    symbolList = ["ETH-USD","BTC-USD","LTC-USD","BCH-USD"]
+    dictPx = {}
+    
+    
+    for s in symbolList:
+        dictPx[s] = wsClient.GetQuote(s)
+    
+    dictPx["CASH-1"] = 1
+    
+    
+    
+    plmodel = clsModels.PLModel(dictPx)
+    plEntries = plmodel.Entries
+    return render_template('pl.html', Entries = plEntries)
+
+
+#hidden control to kill the websocket client
+@app.route("/killFeed")
+def show_killFeed():
+    wsClient.close()
+    return render_template('main.html')
+
+
+
+   
+#socket message will show up when it is connected with client
+    
+@socketio.on('client_connected')                          # Decorator to catch an event called "my event":
+def test_message(message):                        # test_message() is the event callback function.
+    hit_time = str(datetime.datetime.now())
+    print(message)
+    emit('my_response', {'data': hit_time })      # Trigger a new event called "my response" 
+                                                  # that can be caught by another callback later in the program.
+           
+     
+
+
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0') # host='0.0.0.0' needed for docker
+    #app.run(host='0.0.0.0') # host='0.0.0.0' needed for docker
+    socketio.run(app, host='0.0.0.0') 
+
+    

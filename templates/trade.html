@@ -1,13 +1,237 @@
 {% extends "layout.html" %}
 
 {% block content %}
+
+
+<div id="Portfolio">
+<h2>Your portfolio:</h2>
+<h1>$ {{ CashEntry }}</h1>
+
+<table border="2">
+<tr>
+ <td>Symbol</td>
+ <td>Units</td>
+
+</tr>  
+{% for entries in Entries %}
+    <tr>
+    <td>{{ entries[0] }}</td>
+    <td>{{ entries[1] }}</td>
+  </tr>
+{% endfor %}
+</table>  
+
+</div>
+
+<div id="tradeOption">
   <form action="/submitTrade" method="POST">
     <select name="side">
       <option value="b">Buy</option>
       <option value="s">Sell</option>
     </select>
-    symbol <input type="text" name="symbol">
+    
+    <select name="symbol">
+      <option value="BTC-USD">BTC-USD</option>
+      <option value="BCH-USD">BCH-USD</option>
+      <option value="ETH-USD">ETH-USD</option>
+      <option value="LTC-USD">LTC-USD</option>
+   
+    </select>
+    
+    
     quantity <input type="number" name="quantity">
     <input type="submit" class="btn btn-info" value="Execute">
   </form>
+
+        <script type="text/javascript" charset="utf-8">
+            //https://www.w3resource.com/javascript/form/all-numbers.php
+            function allnumeric(inputtxt)
+           {
+              var numbers = /^[0-9.]+$/;
+              if(document.getElementById("quantity").value.match(numbers))
+              {
+                  return true;
+              }
+              else
+              {
+                  alert('Please input numeric value for quantity');
+                  document.getElementById("quantity").focus();
+                  return false;
+                }
+           } 
+
+
+    </script>
+
+
+</div>
+<div id=current_px>
+
+<a href="https://support.gdax.com/customer/en/portal/articles/2424961-what-is-gdax-">GDAX Sxchange supports Ticker (BTC, ETH, LTC, BCH)</a>
+
+    <br>
+    <table border=2>
+        <tr>
+         <td>Symbol</td>
+         <td>Price</td>
+         <td>Best Ask</td>
+         <td>Best Bid</td>
+         <td>Time</td>
+         <td>Open 24H</td>
+         <td>Volume 24H</td>
+         <td>Low 24H</td>
+         <td>High 24H</td>
+       </tr>
+        <tr>
+         <td id="BTC-USD_product_id">BTC-USD</td>
+         <td id="BTC-USD_price"></td>
+         <td id="BTC-USD_best_ask"></td>
+         <td id="BTC-USD_best_bid"></td>
+         <td id="BTC-USD_time"></td>
+         <td id="BTC-USD_open_24h"></td>
+         <td id="BTC-USD_volume_24h"></td>
+         <td id="BTC-USD_low_24h"></td>
+         <td id="BTC-USD_high_24h"></td>
+       </tr>
+        <tr>
+         <td id="BCH-USD_product_id">BCH-USD</td>
+         <td id="BCH-USD_price"></td>
+         <td id="BCH-USD_best_ask"></td>
+         <td id="BCH-USD_best_bid"></td>
+         <td id="BCH-USD_time"></td>
+         <td id="BCH-USD_open_24h"></td>
+         <td id="BCH-USD_volume_24h"></td>
+         <td id="BCH-USD_low_24h"></td>
+         <td id="BCH-USD_high_24h"></td>
+       </tr>
+               <tr>
+         <td id="ETH-USD_product_id">ETH-USD</td>
+         <td id="ETH-USD_price"></td>
+         <td id="ETH-USD_best_ask"></td>
+         <td id="ETH-USD_best_bid"></td>
+         <td id="ETH-USD_time"></td>
+         <td id="ETH-USD_open_24h"></td>
+         <td id="ETH-USD_volume_24h"></td>
+         <td id="ETH-USD_low_24h"></td>
+         <td id="ETH-USD_high_24h"></td>
+       </tr>
+               <tr>
+         <td id="LTC-USD_product_id">LTC-USD</td>
+         <td id="LTC-USD_price"></td>
+         <td id="LTC-USD_best_ask"></td>
+         <td id="LTC-USD_best_bid"></td>
+         <td id="LTC-USD_time"></td>
+         <td id="LTC-USD_open_24h"></td>
+         <td id="LTC-USD_volume_24h"></td>
+         <td id="LTC-USD_low_24h"></td>
+         <td id="LTC-USD_high_24h"></td>
+       </tr>
+                
+    </table>
+    <div id="lastUpdate"></div>
+    <pre>Refresh every 3-4 seconds</pre>
+    
+    <script type="text/javascript" charset="utf-8">
+
+        var wsURL = "wss://ws-feed.gdax.com/"
+        
+       
+        var ws
+
+        
+
+       
+        function init() {
+            //start to load websocket feed when page is loaded
+            webSocketFeed()
+        }
+
+        function doSend() {
+                var myObj
+
+                myObj = { "type": "subscribe", "channels": [{ "name": "ticker", "product_ids": ["ETH-USD","BTC-USD","LTC-USD","BCH-USD"] }] };
+
+                console.log(myObj)
+                myJSON = JSON.stringify(myObj);
+                
+                console.log(myJSON)
+                ws.send(myJSON)
+                
+        }
+
+
+        function webSocketFeed() {
+
+            if ("WebSocket" in window) {
+                ws = new WebSocket(wsURL)
+                
+                ws.onopen = function (evt) {
+                    doSend()
+   
+                }
+
+                ws.onmessage = function (evt) {
+                    received_msg = evt.data
+                    LastUpdate(received_msg)
+
+                }
+
+                ws.onclose = function (evt) {
+                    ws.close()
+                }
+
+                ws.onerror = function (evt) {
+                     document.getElementById("lastUpdate").innerHTML = "Error"
+                    
+                }
+
+                window.onbeforeunload = function (evt) {
+                    ws.close()
+                }
+            }
+        }
+
+        function LastUpdate(message) {
+        
+                var obj =  JSON.parse(message)
+                
+                if (obj.type == "ticker") {
+                    document.getElementById(obj.product_id+"_price").innerHTML = obj.price
+                    document.getElementById(obj.product_id+"_best_ask").innerHTML = obj.best_ask
+                    document.getElementById(obj.product_id+"_best_bid").innerHTML = obj.best_bid
+                    if (obj.time.length > 10) {
+                        var local_date = new Date(obj.time);
+                        //Sun Apr 08 2018 18:07:07 GMT-0400 (Eastern Daylight Time)
+                        //get date and time without timezone description
+                        document.getElementById(obj.product_id+"_time").innerHTML =  local_date.toString().substring(0,24)
+                    
+                        //update last updated time
+                        document.getElementById("lastUpdate").innerHTML =  local_date.toString().substring(0,24)
+                    }
+                    document.getElementById(obj.product_id+"_open_24h").innerHTML = obj.open_24h
+                    document.getElementById(obj.product_id+"_volume_24h").innerHTML = obj.volume_24h
+                    document.getElementById(obj.product_id+"_low_24h").innerHTML = obj.low_24h
+                    document.getElementById(obj.product_id+"_high_24h").innerHTML = obj.high_24h
+                    
+                       
+                }   //   if (obj.type == "ticker") {       
+               
+           
+             
+            }
+
+        window.addEventListener("load", init, false);
+
+    </script>
+
+
+
+        
+</div>
+  
+  
+  				
+
+  
+  
 {% endblock %}

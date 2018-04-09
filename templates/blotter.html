@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+
+
+
+
+{% block content %}
+<div id="Blotter">
+<h2>Your Blotter:</h2>
+
+
+<table border="2">
+<tr>
+ <td>Side</td>
+ <td>Ticker</td>
+ <td>Quantity</td>
+ <td>ExecPx</td>
+ <td>MoneyInOut</td>
+ <td>ExecDate</td>
+</tr> 
+ 
+{% for entries in Entries %}
+    <tr>
+    <td>{{ entries.Side }}</td>
+    <td>{{ entries.Ticker }}</td>
+    <td>{{ entries.Quantity }}</td>
+    <td>{{ entries.ExecPx }}</td>
+    <td>{{ entries.MoneyInOut }}</td>
+    <td>{{ entries.ExecDate }}</td>
+    
+  </tr>
+{% endfor %}
+</table>  
+
+</div>
+{% endblock %}

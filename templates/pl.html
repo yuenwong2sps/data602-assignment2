@@ -1,0 +1,34 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div id="PL">
+<h2>Your PL:</h2>
+
+
+<table border="2">
+<tr>
+ <td>Ticker</td>
+ <td>Position</td>
+ <td>Current Market Price</td>
+ <td>VWAP</td>
+ <td>UPL</td>
+ <td>RPL</td>
+</tr> 
+ 
+{% for entries in Entries %}
+    <tr>
+    <td>{{ entries[0] }}</td>
+    <td>{{ entries[2] }}</td>
+    <td>{{ entries[5] }}</td>
+    <td>{{ entries[4] }}</td>
+    <td>{{ entries[3] }}</td>
+    <td>{{ entries[1] }}</td>
+    
+  </tr>
+{% endfor %}
+</table>  
+
+</div>
+
+
+{% endblock %}

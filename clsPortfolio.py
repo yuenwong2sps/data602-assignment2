@@ -10,19 +10,20 @@ Created on Sat Mar 03 18:44:56 2018
 #portfolio, cash, security, price, quantity
 #read(), write()
 
+#clsPortfolio Version 2 with mongoDB 
 
-import csv
-import clsTrade
+import clsDB
 
-portfolioFile = "Portfolio.csv"
 
+dbName = "CyptoTrading"
+dbTableName = "Portfolio"
 
 class Position:
     def __init__(self):
         self.Symbol = ""
         self.Units = "" #positive for long, negative for short
         self.PurchasedPx = 0
-        self.PurchasedDate = 1900/01/01
+        self.PurchasedDate = "1900/01/01"
     
     @property
     def Symbol(self):
@@ -63,52 +64,104 @@ class Position:
 class Portfolio:
     def __init__(self):
         self.Cash = 0
+        
+        #link db
+        self.db = clsDB.DB(dbName)
+        
+        #init Portfolio table if it doesn't exist
+        #iinit account with cash 100MM
+        self.InitPortfolioTableInDB()
+    
+        #read existing holding
         self.Positions = []
         self.ReadHoldings()
+    
+    def InitPortfolioTableInDB(self):
+        if not self.db.isDBInit():
+            #add first entry - cash to portfolio DB
+            cash_data = {
+                "Symbol": "CASH-1",
+                "Units" : 100000000,
+                "PurchasedPx": 1,
+                "PurchasedDate":"1/1/9999",
+                "CostBasis": 0
+                }
+        
+            self.db.insert(dbTableName,cash_data)
+    
     
     def ReadHoldings(self):
         #read latest portfolio
         del self.Positions [:]
         
-        f = open(portfolioFile,'rb')
-        csvReader = csv.reader(f)
-        for row in csvReader:
-            if len(row) > 3:
-                if(row[0]!='Symbol'): #skip the header line
-                    #create object to store position with non-zero units
-                    if float(row[1]) != 0:
-                        p = Position()
+        dbReader = self.db.read(dbTableName)
+
+        for row in dbReader:
+            
+            
+
+            p = Position()
                     
-                        p.Symbol = row[0]
-                        p.Units = float(row[1])
-                        p.PurchasedPx = float(row[2])
-                        p.PurchasedDate = row[3]
-                        p.CostBasis = float(row[4])
+            p.Symbol = row["Symbol"]
+            p.Units = float(row["Units"])
+            p.PurchasedPx = float(row["PurchasedPx"])
+            p.PurchasedDate = row["PurchasedDate"]
+            p.CostBasis = float(row["CostBasis"])
                         
-                        if p.Symbol == "CASH-1":  #for cash, keep in cash variable
-                            self.Cash = p.Units
-                        else:
-                            self.Positions.append(p) #for security, add to holdings list
+            if p.Symbol == "CASH-1":  #for cash, keep in cash variable
+                self.Cash = p.Units
+            else:
+                self.Positions.append(p) #for security, add to holdings list
                         
-                
-                
-        f.close()
-    
+    def ReadHoldingsRaw(self):
+        exclude_CASH = { "Symbol": { '$ne': 'CASH-1' } }
+        dbReader = self.db.read(dbTableName, exclude_CASH)
+        return dbReader
 
-    #Update the changes to the csv file (just like saving data in database)
+    def ReadHoldingsRawWithCash(self):
+       
+        dbReader = self.db.read(dbTableName)
+        return dbReader
 
+
+    #Update data in database
     def CommitChangesHoldings(self):
-        f = open(portfolioFile,"w+")
-        f.write("Symbol,Units,PurchasedPx,PurchasedDate,CostBasis\n")
-        f.write("CASH-1," + str(self.Cash) + ",1,1/1/9999,0\n")
+        
+        
+        #delete before inserting record
+        #it is a refresh for the portfolio table
+        self.db.delete(dbTableName)
+        
+        
+        #update cash
+        cash_data = {
+                "Symbol": "CASH-1",
+                "Units" : self.Cash,
+                "PurchasedPx": 1,
+                "PurchasedDate":"1/1/9999",
+                "CostBasis": 0
+                }
+        
+        self.db.insert(dbTableName,cash_data)
+        
+        
+        #update position
         for pos in self.Positions:
-            f.write(pos.Symbol + "," + str(pos.Units) + "," + str(pos.PurchasedPx) + "," + pos.PurchasedDate + "," + str(pos.CostBasis) +  "\n")
-        f.close()
-        
+            pos_data = {
+                "Symbol": pos.Symbol,
+                "Units" : pos.Units,
+                "PurchasedPx": pos.PurchasedPx,
+                "PurchasedDate": pos.PurchasedDate,
+                "CostBasis": pos.CostBasis
+                    
+                    }
+            self.db.insert(dbTableName,pos_data)
+            
+         
 
 
-        
-    #read all orders, update holdings, write back to file
+    #This function:    
+    #read all orders, update holdings, call "CommitChangeHoldings" to update DB 
     #Assume given "order" is executed with sufficient cash
     def UpdatePosition(self, order):
         
@@ -277,8 +330,6 @@ class Portfolio:
     def GetRows(self):
         
         return len(self.Positions)
-
-
 
 
 

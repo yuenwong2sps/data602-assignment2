@@ -1,18 +1,10 @@
 
 
-#Blotter
-#user see blotter (trade history)
-#read(), write()
-
-#Security List
-#from securitylist.csv
-#read(), write() security universe
 
 
+#Trade and order history class
+#get yahoo stock quote - unused
 
-
-#Trade 
-#get yahoo stock quote
 #Preview trade with symbol, direction, quantity, and total amount
 #trade and return result
 
@@ -22,9 +14,14 @@ import re
 import collections
 import datetime
 
+import clsDB
+
+
 Quote = collections.namedtuple('Quote',['Symbol','Status','Bid','Ask','Open','Close'])
 
-
+#database name and table name in mongodb for order history
+dbName = "CyptoTrading"
+dbTableName = "OrderHistory"
 
 #Order type
 #Only one action
@@ -32,9 +29,36 @@ Quote = collections.namedtuple('Quote',['Symbol','Status','Bid','Ask','Open','Cl
 #Multiple units for taxlot
 class Order:
     def __init__(self):
-        self.id = 0
-        self.Units = 0
+        self._id = 0
+        self._units = 0
+        self._action = ""
+        self._Symbol = ""
+        self._amount = 0
+        self._ExecPx = 0
+        self._CostBasis = 0
+        self._ExecDate = datetime.MINYEAR
+        self._status = ""
+        self._purchasedDate = datetime.MINYEAR
+        
+    def __getattr__(self,attr):
+        self._id = attr.ID
+        self._units = attr.Units
+        self._action = attr.Action
+        self._Symbol = attr.Symbol
+        self._amount = attr.Amount
+        self._ExecPx = attr.ExecPx
+        self._CostBasis = attr.CostBasis
+        self._ExecDate = attr.ExecDate
+        self._status = attr.Status
+        self._purchasedDate = attr.PurchasedDate
 
+    @property
+    def ID(self):
+        return self._id
+    @ID.setter
+    def ID(self, x):
+        self._id = x
+    
     @property
     def Action(self):
         return self._action
@@ -103,14 +127,20 @@ class Order:
 
 class Trade:
     def __init__(self):
-        #update user_portfolio data in csv, we can still do vm test file
+       
         self.id = 0
+        #link db
+        self.db = clsDB.DB(dbName)
         
+
+    def OrderHistoryRaw(self):
+        dbReader = self.db.read(dbTableName)
+        return dbReader
 
     #Enter trade order, return status, exec price, cost basis, save order history
     #cost basis according to the units (not the full original units)
     #PL = difference of Amount and cost basis
-    def OrderEntry(self,Action,Symbol,Units,CostBasis,PurchasedDate):
+    def OrderEntry(self,Action,Symbol,Units,CostBasis,PurchasedDate, quote):
         
         
         #pretent to trade order and save the history
@@ -125,7 +155,7 @@ class Trade:
         
         #full cost basis is previous amount
         
-        quote = self.GetQuote(Symbol)
+        #quote = self.GetQuote(Symbol)
         order = Order()
         order.Symbol = Symbol
         order.Action = Action
@@ -133,39 +163,56 @@ class Trade:
         order.PurchasedDate = PurchasedDate        
         
         if Action == "BUY":
-            
-            if quote.Ask == 0:
-                order.ExecPx = quote.Close
-            else:
-                order.ExecPx = quote.Ask
+           
+            #get bitcoin px from other process
+            order.ExecPx = quote
+           
+           #unused code for stock quote 
+           # if quote.Ask == 0:
+           #     order.ExecPx = quote.Close
+           # else:
+           #     order.ExecPx = quote.Ask
             
             order.Amount = -1* order.ExecPx *  order.Units
         
         if Action == "SELL":
 
-            if quote.Bid == 0:
-                order.ExecPx = quote.Close
-            else:
-                order.ExecPx = quote.Bid
+            #get bitcoin px from other process
+            order.ExecPx = quote
+           
+            #unused code for stock quote
+            #if quote.Bid == 0:
+            #    order.ExecPx = quote.Close
+            #else:
+            #    order.ExecPx = quote.Bid
             
             order.Amount = -1* order.ExecPx *  order.Units
         
         
         if Action == "SELL_TO_OPEN":
 
-            if quote.Bid == 0:
-                order.ExecPx = quote.Close
-            else:
-                order.ExecPx = quote.Bid
+            #get bitcoin px from other process
+            order.ExecPx = quote
+            
+            #unused code for stock quote
+            #if quote.Bid == 0:
+            #    order.ExecPx = quote.Close
+            #else:
+            #    order.ExecPx = quote.Bid
             
             order.Amount = order.ExecPx *  order.Units
         
         
         if Action == "BUY_TO_CLOSE":
-            if quote.Ask == 0:
-                order.ExecPx = quote.Close
-            else:
-                order.ExecPx = quote.Ask
+            
+            #get bitcoin px from other process
+            order.ExecPx = quote
+            
+            #unused code for stock quote
+            #if quote.Ask == 0:
+            #    order.ExecPx = quote.Close
+            #else:
+            #    order.ExecPx = quote.Ask
             
             order.Amount = order.ExecPx *  order.Units
         
@@ -181,21 +228,29 @@ class Trade:
         
         order.Status = "Y"
         
-     #   f = open("OrderHistory.csv","a+")
+        post_data = {
+                "Action": order.Action,
+                "Symbol": order.Symbol,
+                "Units": order.Units,
+                "Amount": order.Amount,
+                "ExecPx": order.ExecPx,
+                "ExecDate": order.ExecDate,
+                "CostBasis": order.CostBasis,
+                "PurchasedDate": order.PurchasedDate
+                
+                }
         
-     #   #Action,Symbol,Units,Amount,ExecPx,ExecDate,CostBasis
-     #   f.write(order.Action + "," + order.Symbol + "," + str(order.Units) + "," + str(order.Amount) + "," + str(order.ExecPx) + "," + order.ExecDate + "," + str(order.CostBasis) + "," + PurchasedDate + "\n")
+        self.db.insert(dbTableName, post_data)
         
-     #   f.close()
+
         
         return order
     
     
     
+
     
-    def GetQuoteTest(self):
-        return self.GetQuote('AAPL')
-    
+    #for stock quote, so it is unused
     def GetQuote(self,symbol):
         
         
