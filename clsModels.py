@@ -44,8 +44,15 @@ class PLModel:
             
             #get Realized P/L per symbol
             sym_RUL = orderHistory.query('Action == "BUY_TO_CLOSE" or Action == "SELL"')
+            
+            if sym_RUL.empty:
+                sym_RUL = pd.DataFrame([["ETH-USD",0,0],["BTC-USD",0,0],["LTC-USD",0,0],["BCH-USD",0,0]])
+                sym_RUL.columns =  ['Symbol','CostBasis','Amount']
+            
             sym_RUL = pd.pivot_table(sym_RUL, values=['CostBasis','Amount'], index=['Symbol'], aggfunc=np.sum )
             sym_RUL.reset_index(inplace=True) #reset before merging
+            
+            
             
             
             symbolList.columns = ["Symbol"] #add column header before merging
@@ -53,11 +60,14 @@ class PLModel:
             symbolList.reset_index(inplace=True)  #reset before merging
             
             
+            
             #merge symbol (with dummy columns) with traded cost basis and amount for Realized P/L
             total_sym = pd.merge(symbolList, sym_RUL, 'outer', on = ['Symbol'])
             total_sym.fillna(0, inplace=True)
             
-             
+           
+            print(total_sym)
+            
             #update RUL with costbasis / units
             for i, row in total_sym.iterrows():
                 if row['Amount'] == 0 and row['CostBasis'] == 0:
